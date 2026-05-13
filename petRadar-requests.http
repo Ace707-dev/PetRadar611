@@ -1,7 +1,3 @@
-### PetRadar API - Ejemplos de requests
-# Usa este archivo con VS Code REST Client o copia los comandos a tu terminal.
-# Asegúrate de que la app esté corriendo en http://localhost:3000
-
 ### GET todas las mascotas perdidas
 GET http://localhost:3000/lost-pets
 
@@ -40,7 +36,7 @@ Content-Type: application/json
   "size": "pequeño",
   "description": "Lo encontre comiendo, otra vez",
   "photo_url": "https://drive.google.com/uc?export=view&id=1n3ip1OZu2qUG6Dw-Igzt_eMwNibyQuaW",
-  "finder_name": "Alexia ",
+  "finder_name": "Alexia",
   "finder_email": "alexia.dmgz.prz@gmail.com",
   "finder_phone": "+5247712345678",
   "latitude": -34.6037,
@@ -49,9 +45,8 @@ Content-Type: application/json
   "found_date": "2026-05-13T05:00:00Z"
 }
 
-### GET y POST adicionales
-# GET nuevamente mascotas perdidas después de insertar una
+### GET todas las mascotas perdidas
 GET http://localhost:3000/lost-pets
 
-# GET nuevamente mascotas encontradas después de insertar una
+### GET todas las mascotas encontradas
 GET http://localhost:3000/found-pets

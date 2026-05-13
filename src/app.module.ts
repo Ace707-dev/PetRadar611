@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LostPetsModule } from './lost-pets/lost-pets.module';
 import { FoundPetsModule } from './found-pets/found-pets.module';
 import { MailModule } from './mail/mail.module';
+import { RedisModule } from './common/redis/redis.module';
 
 @Module({
   imports: [
@@ -24,6 +25,8 @@ import { MailModule } from './mail/mail.module';
         logging: config.get('NODE_ENV') !== 'production',
       }),
     }),
+
+    RedisModule, // Global — inyectable en todos los módulos sin importar explícitamente
 
     LostPetsModule,
     FoundPetsModule,

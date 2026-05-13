@@ -1,12 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import Redis from 'ioredis';
 import { FoundPet } from './entities/found-pet.entity';
 import { CreateFoundPetDto } from './dto/create-found-pet.dto';
 import { LostPetsService, NearbyLostPet } from '../lost-pets/lost-pets.service';
 import { MailService } from '../mail/mail.service';
+import { REDIS_CLIENT } from '../common/redis/redis.module';
+import { getOrSetCache, invalidateByPattern } from '../common/redis/cache.util';
 
 const SEARCH_RADIUS_METERS = 500;
+const CACHE_KEY = 'found_pets:active';
+const CACHE_TTL = 60; // segundos
 
 @Injectable()
 export class FoundPetsService {
@@ -18,7 +23,28 @@ export class FoundPetsService {
     private readonly dataSource: DataSource,
     private readonly lostPetsService: LostPetsService,
     private readonly mailService: MailService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
+
+  /**
+   * GET /found-pets — cacheado en Redis por CACHE_TTL segundos
+   */
+  async findAll(): Promise<FoundPet[]> {
+    return getOrSetCache(this.redis, CACHE_KEY, CACHE_TTL, () =>
+      this.dataSource.query(
+        `
+        SELECT
+          id, species, breed, color, size, description, photo_url,
+          finder_name, finder_email, finder_phone,
+          address, found_date, created_at, updated_at,
+          ST_Y(location::geometry) AS latitude,
+          ST_X(location::geometry) AS longitude
+        FROM found_pets
+        ORDER BY created_at DESC
+        `,
+      ),
+    );
+  }
 
   async create(dto: CreateFoundPetDto): Promise<{
     foundPet: FoundPet;
@@ -60,9 +86,9 @@ export class FoundPetsService {
       ],
     );
 
-    const foundPet: FoundPet & { latitude: number; longitude: number } =
-      result[0];
+    const foundPet: FoundPet & { latitude: number; longitude: number } = result[0];
 
+    // Búsqueda por radio 500m usando ST_DWithin + ::geography (metros exactos)
     const nearbyLostPets = await this.lostPetsService.findNearby(
       dto.latitude,
       dto.longitude,
@@ -76,25 +102,17 @@ export class FoundPetsService {
     let notificationsSent = 0;
     for (const lostPet of nearbyLostPets) {
       try {
-        await this.mailService.sendFoundPetNotification({
-          foundPet: { ...foundPet },
-          lostPet,
-        });
+        await this.mailService.sendFoundPetNotification({ foundPet: { ...foundPet }, lostPet });
         notificationsSent++;
-        this.logger.log(
-          `Notificación enviada a ${lostPet.owner_email} por mascota ${lostPet.name}`,
-        );
+        this.logger.log(`Notificación enviada a ${lostPet.owner_email} por mascota ${lostPet.name}`);
       } catch (err) {
-        this.logger.error(
-          `Error enviando correo a ${lostPet.owner_email}: ${err.message}`,
-        );
+        this.logger.error(`Error enviando correo a ${lostPet.owner_email}: ${err.message}`);
       }
     }
 
-    return {
-      foundPet,
-      nearbyLostPets,
-      notificationsSent,
-    };
+    // Invalidar cache para que el próximo GET traiga datos frescos
+    await invalidateByPattern(this.redis, 'found_pets:*');
+
+    return { foundPet, nearbyLostPets, notificationsSent };
   }
 }

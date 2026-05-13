@@ -1,3 +1,24 @@
+// ⚠️ Application Insights DEBE inicializarse antes que cualquier otro import
+import * as appInsights from 'applicationinsights';
+
+const aiConnectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+if (aiConnectionString) {
+  appInsights
+    .setup(aiConnectionString)
+    .setAutoDependencyCorrelation(true)
+    .setAutoCollectRequests(true)
+    .setAutoCollectPerformance(true, true)
+    .setAutoCollectExceptions(true)
+    .setAutoCollectDependencies(true)
+    .setAutoCollectConsole(true, true)
+    .setUseDiskRetryCaching(true)
+    .setSendLiveMetrics(true)
+    .start();
+  console.log('✅ Application Insights inicializado');
+} else {
+  console.warn('⚠️  APPLICATIONINSIGHTS_CONNECTION_STRING no definida — telemetría desactivada');
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';

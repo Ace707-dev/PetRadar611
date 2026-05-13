@@ -1,8 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import Redis from 'ioredis';
 import { LostPet } from './entities/lost-pet.entity';
 import { CreateLostPetDto } from './dto/create-lost-pet.dto';
+import { REDIS_CLIENT } from '../common/redis/redis.module';
+import { getOrSetCache, invalidateByPattern } from '../common/redis/cache.util';
 
 export interface NearbyLostPet extends LostPet {
   distance: number;
@@ -10,12 +13,16 @@ export interface NearbyLostPet extends LostPet {
   longitude: number;
 }
 
+const CACHE_KEY = 'lost_pets:active';
+const CACHE_TTL = 60; // segundos
+
 @Injectable()
 export class LostPetsService {
   constructor(
     @InjectRepository(LostPet)
     private readonly lostPetRepo: Repository<LostPet>,
     private readonly dataSource: DataSource,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   async create(dto: CreateLostPetDto): Promise<LostPet> {
@@ -48,16 +55,43 @@ export class LostPetsService {
         dto.owner_name,
         dto.owner_email,
         dto.owner_phone,
-        dto.longitude, // ST_MakePoint(lng, lat)
+        dto.longitude,
         dto.latitude,
         dto.address,
         dto.lost_date,
       ],
     );
 
+    // Invalidar cache para reflejar el nuevo registro
+    await invalidateByPattern(this.redis, 'lost_pets:*');
+
     return result[0];
   }
 
+  /**
+   * GET /lost-pets — cacheado en Redis por CACHE_TTL segundos
+   */
+  async findAll(): Promise<LostPet[]> {
+    return getOrSetCache(this.redis, CACHE_KEY, CACHE_TTL, () =>
+      this.dataSource.query(
+        `
+        SELECT
+          id, name, species, breed, color, size, description, photo_url,
+          owner_name, owner_email, owner_phone,
+          address, lost_date, is_active, created_at, updated_at,
+          ST_Y(location::geometry) AS latitude,
+          ST_X(location::geometry) AS longitude
+        FROM lost_pets
+        WHERE is_active = true
+        ORDER BY created_at DESC
+        `,
+      ),
+    );
+  }
+
+  /**
+   * Búsqueda por radio usando ST_DWithin + ::geography (distancia en metros)
+   */
   async findNearby(
     latitude: number,
     longitude: number,
@@ -88,23 +122,6 @@ export class LostPetsService {
       [longitude, latitude, radiusMeters],
     );
 
-    return results;
-  }
-
-  async findAll(): Promise<LostPet[]> {
-    const results = await this.dataSource.query(
-      `
-      SELECT
-        id, name, species, breed, color, size, description, photo_url,
-        owner_name, owner_email, owner_phone,
-        address, lost_date, is_active, created_at, updated_at,
-        ST_Y(location::geometry) AS latitude,
-        ST_X(location::geometry) AS longitude
-      FROM lost_pets
-      WHERE is_active = true
-      ORDER BY created_at DESC
-      `,
-    );
     return results;
   }
 }

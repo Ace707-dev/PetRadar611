@@ -8,6 +8,6 @@ import { LostPetsController } from './lost-pets.controller';
   imports: [TypeOrmModule.forFeature([LostPet])],
   providers: [LostPetsService],
   controllers: [LostPetsController],
-  exports: [LostPetsService], // lo necesita FoundPetsModule
+  exports: [LostPetsService],
 })
 export class LostPetsModule {}

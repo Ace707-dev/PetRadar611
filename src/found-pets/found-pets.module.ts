@@ -9,8 +9,8 @@ import { MailModule } from '../mail/mail.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([FoundPet]),
-    LostPetsModule, // expone LostPetsService
-    MailModule,     // expone MailService
+    LostPetsModule,
+    MailModule,
   ],
   providers: [FoundPetsService],
   controllers: [FoundPetsController],

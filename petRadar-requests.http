@@ -1,0 +1,57 @@
+### PetRadar API - Ejemplos de requests
+# Usa este archivo con VS Code REST Client o copia los comandos a tu terminal.
+# Asegúrate de que la app esté corriendo en http://localhost:3000
+
+### GET todas las mascotas perdidas
+GET http://localhost:3000/lost-pets
+
+### GET todas las mascotas encontradas
+GET http://localhost:3000/found-pets
+
+### POST crear mascota perdida
+POST http://localhost:3000/lost-pets
+Content-Type: application/json
+
+{
+  "name": "Coffee",
+  "species": "perro",
+  "breed": "gordito",
+  "color": "blanquito",
+  "size": "pequeño",
+  "description": "Se perdió mientras comia, como siempre",
+  "photo_url": "https://drive.google.com/uc?export=view&id=1n3ip1OZu2qUG6Dw-Igzt_eMwNibyQuaW",
+  "owner_name": "Andres",
+  "owner_email": "andres.ag.he707@gmail.com",
+  "owner_phone": "+524771889883",
+  "latitude": -34.6037,
+  "longitude": -58.3816,
+  "address": "Av. Ya me quiero dar de baja de la uni 117",
+  "lost_date": "2026-05-12T00:00:00Z"
+}
+
+### POST crear mascota encontrada
+POST http://localhost:3000/found-pets
+Content-Type: application/json
+
+{
+  "species": "perro",
+  "breed": "gordito",
+  "color": "blanquito",
+  "size": "pequeño",
+  "description": "Lo encontre comiendo, otra vez",
+  "photo_url": "https://drive.google.com/uc?export=view&id=1n3ip1OZu2qUG6Dw-Igzt_eMwNibyQuaW",
+  "finder_name": "Alexia ",
+  "finder_email": "alexia.dmgz.prz@gmail.com",
+  "finder_phone": "+5247712345678",
+  "latitude": -34.6037,
+  "longitude": -58.3816,
+  "address": "Av. lol omg",
+  "found_date": "2026-05-13T05:00:00Z"
+}
+
+### GET y POST adicionales
+# GET nuevamente mascotas perdidas después de insertar una
+GET http://localhost:3000/lost-pets
+
+# GET nuevamente mascotas encontradas después de insertar una
+GET http://localhost:3000/found-pets

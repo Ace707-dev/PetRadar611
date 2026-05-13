@@ -46,7 +46,7 @@ export class LostPet {
     spatialFeatureType: 'Point',
     srid: 4326,
     nullable: false,
-    select: false, // la excluimos del SELECT por defecto; la pedimos explícitamente
+    select: false,
   })
   location: string;
 

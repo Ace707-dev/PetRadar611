@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   postgres:
@@ -19,8 +18,22 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: petradar_redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
     container_name: petradar_app
     env_file: .env
     ports:
@@ -28,9 +41,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - .:/app
-      - /app/node_modules
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: petradar
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      NODE_ENV: development
+      PORT: 3000
+    restart: unless-stopped
 
 volumes:
   petradar_data:

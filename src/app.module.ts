@@ -23,10 +23,12 @@ import { RedisModule } from './common/redis/redis.module';
         synchronize: false,
         autoLoadEntities: true,
         logging: config.get('NODE_ENV') !== 'production',
+          ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+
       }),
     }),
 
-    RedisModule, // Global — inyectable en todos los módulos sin importar explícitamente
+    RedisModule, 
 
     LostPetsModule,
     FoundPetsModule,
